@@ -92,22 +92,25 @@ sequenceDiagram
 
 ## 🧩 Kiến trúc Lai (Hybrid APIs)
 
-Ứng dụng này được thiết kế theo mô hình **Kiến trúc Lai** (kết hợp nhiều nền tảng bản đồ) nhằm tối ưu hóa hiệu năng và đặc biệt là **tối ưu chi phí bằng điểm 0**, tránh được việc phải chi trả ngân sách đắt đỏ cho thẻ tín dụng trên Google Cloud. Mô hình này rất được điểm cộng trong mắt hội đồng bảo vệ sinh viên/doanh nghiệp:
+Ứng dụng này được thiết kế theo mô hình **Kiến trúc Lai** (kết hợp nhiều nền tảng bản đồ) nhằm tối ưu hóa hiệu năng:
 
 ### 1. Google Maps Platform SDK (Của Google)
-* **Vai trò:** UI / Tầng Render hiển thị (View).
-* **Nhiệm vụ:** Xử lý việc vẽ bản đồ 3D, tải Map Tiles, xoay bản đồ và gắn Marker.
-* **Lý do:** Bộ SDK nguyên bản của `google_maps_flutter` quá mạnh, độ trễ thấp và hỗ trợ trực tiếp phần cứng điện thoại rất hoàn hảo so với các loại Map Engine khác.
+
+- **Vai trò:** UI / Tầng Render hiển thị (View).
+- **Nhiệm vụ:** Xử lý việc vẽ bản đồ 3D, tải Map Tiles, xoay bản đồ và gắn Marker.
+- **Lý do:** Bộ SDK nguyên bản của `google_maps_flutter` quá mạnh, độ trễ thấp và hỗ trợ trực tiếp phần cứng điện thoại rất hoàn hảo so với các loại Map Engine khác.
 
 ### 2. OSRM - Open Source Routing Machine (Mã nguồn mở)
-* **Vai trò:** Thuật toán Tìm đường (Routing Polyline).
-* **Nhiệm vụ:** Tiếp nhận Toạ độ A và B. Trả về hàng nghìn toạ độ điểm để nối lại thành vệt xanh chỉ đường.
-* **Lý do:** Thay thế API *Google Directions*. Việc xài server OSRM mã nguồn mở vừa miễn phí vĩnh viễn, tốc độ cao lại giải quyết được bài toán đắt đỏ của ngành Logistics.
+
+- **Vai trò:** Thuật toán Tìm đường (Routing Polyline).
+- **Nhiệm vụ:** Tiếp nhận Toạ độ A và B. Trả về hàng nghìn toạ độ điểm để nối lại thành vệt xanh chỉ đường.
+- **Lý do:** Thay thế API _Google Directions_. Việc xài server OSRM mã nguồn mở vừa miễn phí vĩnh viễn, tốc độ cao lại giải quyết được bài toán đắt đỏ của ngành Logistics.
 
 ### 3. Nominatim API (Của OpenStreetMap)
-* **Vai trò:** "Bộ não" cốt lõi của thanh Tìm Kiếm (Geocoding & Autocomplete).
-* **Nhiệm vụ:** Dịch text chữ "Aeon" thành Toạ độ Kinh/Vĩ độ; Cung cấp khả năng Lọc gợi ý trực tiếp (Live Search Dropdown) với kĩ thuật ngắt quãng **Debounce Time 700ms**.
-* **Lý do:** Thay thế API *Google Places API*. Dữ liệu của Nominatim và OpenStreetMap được cộng đồng cập nhật từng phút. Với các thiết lập Filter bằng `countrycodes=vn`, độ sai lệch là cực kỳ nhỏ.
+
+- **Vai trò:** "Bộ não" cốt lõi của thanh Tìm Kiếm (Geocoding & Autocomplete).
+- **Nhiệm vụ:** Dịch text chữ "Aeon" thành Toạ độ Kinh/Vĩ độ; Cung cấp khả năng Lọc gợi ý trực tiếp (Live Search Dropdown) với kĩ thuật ngắt quãng **Debounce Time 700ms**.
+- **Lý do:** Thay thế API _Google Places API_. Dữ liệu của Nominatim và OpenStreetMap được cộng đồng cập nhật từng phút. Với các thiết lập Filter bằng `countrycodes=vn`, độ sai lệch là cực kỳ nhỏ.
 
 ---
 
