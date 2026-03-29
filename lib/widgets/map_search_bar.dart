@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../search_delegate.dart';
+import '../screens/search_delegate.dart';
 
 class MapSearchBar extends StatelessWidget {
   final String queryText;

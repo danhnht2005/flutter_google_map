@@ -3,10 +3,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
-import 'services/map_api_service.dart';
-import 'widgets/map_search_bar.dart';
-import 'widgets/map_action_buttons.dart';
-import 'widgets/place_bottom_sheet.dart';
+import '../services/map_api_service.dart';
+import '../widgets/map_search_bar.dart';
+import '../widgets/map_action_buttons.dart';
+import '../widgets/place_bottom_sheet.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
