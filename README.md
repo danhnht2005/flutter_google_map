@@ -80,7 +80,7 @@ sequenceDiagram
     User->>PlaceBottomSheet: Bấm nút "Đường đi" (Chỉ đường xanh)
     PlaceBottomSheet->>MapScreen: Kích hoạt _findRoute()
     MapScreen->>MapApiService: Truyền 2 biến (_start, _end)
-    MapApiService->>OSRM Router API: HTTP GET /route/v1/driving/start;end
+    MapApiService->>OSRM Router API: Lệnh lấy đường đi bằng toạ độ (GET route)
     OSRM Router API-->>MapApiService: Trả về Khối JSON Toạ độ Polyline siêu lớn
     Note over MapApiService: ⚡ [Isolate compute()] Chạy ngầm tiến trình parse JSON<br/>Không làm đứng/giật UI màn hình chính
     MapApiService-->>MapScreen: Trả về Mảng List<LatLng>
