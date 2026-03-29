@@ -173,7 +173,6 @@ class _MapScreenState extends State<MapScreen> {
             onSearchResult: _handleSearchPlace,
           ),
           MapActionButtons(
-            onLayerTap: () {},
             onMyLocationTap: () {
               if (_start != null) _moveCamera(_start!);
             },

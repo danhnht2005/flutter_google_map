@@ -3,35 +3,17 @@ import 'package:flutter/material.dart';
 class MapActionButtons extends StatelessWidget {
   final VoidCallback onMyLocationTap;
   final VoidCallback onDirectionTap;
-  final VoidCallback onLayerTap;
 
   const MapActionButtons({
     super.key,
     required this.onMyLocationTap,
     required this.onDirectionTap,
-    required this.onLayerTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned(
-          right: 16,
-          top: 130,
-          child: Column(
-            children: [
-              FloatingActionButton(
-                heroTag: "btnLayer",
-                mini: true,
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black87,
-                onPressed: onLayerTap,
-                child: const Icon(Icons.layers),
-              ),
-            ],
-          ),
-        ),
         Positioned(
           right: 16,
           bottom: 16,
