@@ -2,29 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+
+import 'services/map_api_service.dart';
+import 'widgets/map_search_bar.dart';
+import 'widgets/map_action_buttons.dart';
+import 'widgets/place_bottom_sheet.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
+
   @override
   _MapScreenState createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
   final Completer<GoogleMapController> _controller = Completer();
-  final Set<Marker> _markers = {}; // Danh sách marker
-  final Set<Polyline> _polylines = {}; // Danh sách polyline
-  static final LatLng _destination = LatLng(
-    10.7769,
-    106.7009,
-  ); // Vị trí mặc định TP.HCM
-  final CameraPosition _initialPosition = CameraPosition(
+  final Set<Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
+  static const LatLng _destination = LatLng(10.7769, 106.7009);
+  
+  final CameraPosition _initialPosition = const CameraPosition(
     target: _destination,
     zoom: 14,
   );
-  LatLng? _start; // Biến lưu vị trí hiện tại của người dùng
-  LatLng? _end; // Biến lưu vị trí điểm đến
+  
+  LatLng? _start;
+  LatLng? _end;
+  int _selectedIndex = 0;
+  String _searchQueryText = "Tìm kiếm ở đây";
 
   @override
   void initState() {
@@ -32,7 +37,6 @@ class _MapScreenState extends State<MapScreen> {
     _getCurrentLocation();
   }
 
-  // Hàm thêm marker
   void _addMarker(LatLng position, String markerId) {
     setState(() {
       _markers.add(
@@ -45,148 +49,153 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  // Hàm di chuyển camera đến vị trí chỉ định mới
   Future<void> _moveCamera(LatLng position) async {
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newLatLng(position));
   }
 
-  // Lấy vị trí hiện tại của người dùng
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Vui lòng bật dịch vụ vị trí!')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng bật dịch vụ vị trí!')),
+        );
+      }
       return;
     }
     LocationPermission permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) return;
+    
     Position position = await Geolocator.getCurrentPosition();
     setState(() {
       _start = LatLng(position.latitude, position.longitude);
       _addMarker(_start!, "Vị trí của bạn");
-      _moveCamera(_start!);
     });
+    _moveCamera(_start!);
   }
 
-  // Tìm đường đi
   Future<void> _findRoute() async {
-    if (_start == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Chưa lấy được vị trí hiện tại!')));
-      return;
-    }
-    if (_end == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vui lòng nhấn giữ bản đồ để chọn điểm đến!')),
-      );
-      return;
-    }
-
-    final url =
-        'https://router.project-osrm.org/route/v1/driving/${_start!.longitude},${_start!.latitude};${_end!.longitude},${_end!.latitude}?overview=full&geometries=geojson';
-
-    final response = await http.get(Uri.parse(url));
-    debugPrint('OSRM Response status: ${response.statusCode}');
-    debugPrint('OSRM Response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final apiCode = data['code']?.toString() ?? 'Unknown';
-
-      if (apiCode == 'Ok' &&
-          data['routes'] != null &&
-          (data['routes'] as List).isNotEmpty) {
-        final List<LatLng> points = _parseOsrmGeometry(
-          data['routes'][0]['geometry']['coordinates'],
+    if (_start == null || _end == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng chọn điểm đến!')),
         );
+      }
+      return;
+    }
 
-        if (points.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Không đọc được dữ liệu tuyến đường từ OSRM.'),
-            ),
-          );
-          return;
-        }
+    final points = await MapApiService.getRoute(_start!, _end!);
 
-        setState(() {
-          _polylines.clear();
-          _polylines.add(
-            Polyline(
-              polylineId: PolylineId('route'),
-              points: points,
-              color: Colors.blue,
-              width: 5,
-            ),
-          );
-        });
-        _moveCamera(_start!);
-      } else {
-        final message =
-            data['message']?.toString() ?? 'Không tìm thấy tuyến đường.';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+    if (points != null && points.isNotEmpty) {
+      setState(() {
+        _polylines.clear();
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: points,
+            color: const Color(0xFF007A7C),
+            width: 6,
+          ),
+        );
+      });
+      _moveCamera(_start!);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm được tuyến đường.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleSearchPlace(String query) async {
+    setState(() {
+      _searchQueryText = query;
+    });
+
+    final placeData = await MapApiService.searchPlace(query);
+
+    if (placeData != null) {
+      final lat = double.parse(placeData['lat']);
+      final lon = double.parse(placeData['lon']);
+      final displayName = placeData['display_name'];
+
+      setState(() {
+        _end = LatLng(lat, lon);
+        _addMarker(_end!, query);
+      });
+      await _moveCamera(_end!);
+
+      if (mounted) {
+        PlaceBottomSheet.show(
+          context: context,
+          title: query,
+          fullAddress: displayName,
+          onDirectionTap: () {
+            Navigator.pop(context);
+            _findRoute(); 
+          },
+        );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi khi gọi API: ${response.statusCode}')),
-      );
-    }
-  }
-
-  List<LatLng> _parseOsrmGeometry(dynamic coordinates) {
-    if (coordinates is! List) return [];
-
-    final points = <LatLng>[];
-    for (final item in coordinates) {
-      if (item is List && item.length >= 2) {
-        final lng = (item[0] as num?)?.toDouble();
-        final lat = (item[1] as num?)?.toDouble();
-        if (lat != null && lng != null) {
-          points.add(LatLng(lat, lng));
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy địa điểm!')),
+        );
       }
     }
-    return points;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Google Maps Flutter Demo')),
       body: Stack(
         children: [
           GoogleMap(
             initialCameraPosition: _initialPosition,
             markers: _markers,
+            polylines: _polylines,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
             onMapCreated: (GoogleMapController controller) {
               _controller.complete(controller);
             },
-            myLocationButtonEnabled: true,
-            myLocationEnabled: true,
             onLongPress: (LatLng position) {
               _addMarker(position, "Điểm đến");
               _end = position;
             },
-            polylines: _polylines,
           ),
-
-          Positioned(
-            bottom: 95,
-            right: 7,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.directions, color: Colors.blue),
-              onPressed: () {
-                _findRoute();
-              },
-            ),
+          MapSearchBar(
+            queryText: _searchQueryText,
+            onSearchResult: _handleSearchPlace,
           ),
+          MapActionButtons(
+            onLayerTap: () {},
+            onMyLocationTap: () {
+              if (_start != null) _moveCamera(_start!);
+            },
+            onDirectionTap: _findRoute,
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.black54,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: "Khám phá"),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark_border), label: "Đã lưu"),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: "Đóng góp"),
         ],
       ),
     );
