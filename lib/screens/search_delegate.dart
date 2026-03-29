@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/map_api_service.dart';
 
 class MapSearchDelegate extends SearchDelegate<String> {
   @override
@@ -39,27 +40,69 @@ class MapSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    if (query.isNotEmpty) {
+      return FutureBuilder<List<Map<String, String>>>(
+        future: MapApiService.getSearchSuggestions(query),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Không tìm thấy kết quả phù hợp."));
+          }
+          final results = snapshot.data!;
+          return Container(
+            color: Colors.white,
+            child: ListView.separated(
+              itemCount: results.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final item = results[index];
+                return ListTile(
+                  leading: const Icon(Icons.location_on, color: Colors.black54),
+                  title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  subtitle: item['subtitle']!.isNotEmpty
+                      ? Text(item['subtitle']!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: Colors.black54))
+                      : null,
+                  onTap: () {
+                    query = item['query'] ?? item['title']!;
+                    close(context, query);
+                  },
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
+
     final List<Map<String, String>> recentSearches = [
       {
-        "title": "MB Phú Nhuận",
-        "subtitle": "Tòa nhà Prince Residence, 19 - 21 Đ. Nguyễn...",
-      },
-      {
-        "title": "mbbank gần đây",
-        "subtitle": "",
-      },
-      {
-        "title": "148/9 Lý Chính Thắng",
-        "subtitle": "Võ Thị Sáu, Xuân Hòa, Hồ Chí Minh",
-      },
-      {
-        "title": "Chung cư K26",
-        "subtitle": "phường 5, Hạnh Thông, Hồ Chí Minh",
-      },
-      {
-        "title": "MANGROVE COFFEE & TEA",
-        "subtitle": "Đường Cao Thắng, Phường 12, Quận 10\nĐang mở cửa",
+        "title": "Đại học Công Thương TP.HCM",
+        "subtitle": "140 Lê Trọng Tấn, Tây Thạnh, Tân Phú, Hồ Chí Minh",
         "isVenue": "true",
+        "query": "Đại học Công Thương, Tân Phú",
+      },
+      {
+        "title": "Aeon Mall Tân Phú Celadon",
+        "subtitle": "30 Bờ Bao Tân Thắng, Sơn Kỳ, Tân Phú\nĐang mở cửa",
+        "isVenue": "true",
+        "query": "Aeon Mall Tân Phú",
+      },
+      {
+        "title": "Chợ Bến Thành",
+        "subtitle": "Đường Lê Lợi, Phường Bến Thành, Quận 1, Hồ Chí Minh",
+        "query": "Chợ Bến Thành",
+      },
+      {
+        "title": "Landmark 81",
+        "subtitle": "720A Điện Biên Phủ, Phường 22, Bình Thạnh, Hồ Chí Minh",
+        "query": "Landmark 81",
+      },
+      {
+        "title": "Bến xe Miền Đông mới",
+        "subtitle": "501 Hoàng Hữu Nam, Long Bình, Thủ Đức, Hồ Chí Minh",
+        "query": "Bến xe Miền Đông Mới",
       },
     ];
 
@@ -67,23 +110,7 @@ class MapSearchDelegate extends SearchDelegate<String> {
       color: const Color(0xFFF1F3F4),
       child: ListView(
         children: [
-          if (query.isNotEmpty)
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.search, color: Colors.white, size: 20),
-                ),
-                title: Text(
-                  'Tìm tại: "$query"',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                onTap: () {
-                  close(context, query);
-                },
-              ),
-            ),
+          // Da xoa block nay vi da su dung tinh nang autocomplete o FutureBuilder tren
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -138,7 +165,7 @@ class MapSearchDelegate extends SearchDelegate<String> {
                         )
                       : null,
                   onTap: () {
-                    query = item["title"]!;
+                    query = item["query"] ?? item["title"]!;
                     close(context, query);
                   },
                 );
