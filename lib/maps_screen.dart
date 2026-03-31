@@ -40,6 +40,16 @@ class _MapScreenState extends State<MapScreen> {
           markerId: MarkerId(markerId),
           position: position,
           infoWindow: InfoWindow(title: markerId),
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Marker: $markerId\nVĩ độ: ${position.latitude}\nKinh độ: ${position.longitude}',
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
         ),
       );
     });
