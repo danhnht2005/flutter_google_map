@@ -8,6 +8,7 @@ import 'dart:convert';
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
   @override
+  // ignore: library_private_types_in_public_api
   _MapScreenState createState() => _MapScreenState();
 }
 
@@ -40,6 +41,7 @@ class _MapScreenState extends State<MapScreen> {
           markerId: MarkerId(markerId),
           position: position,
           infoWindow: InfoWindow(title: markerId),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -50,6 +52,17 @@ class _MapScreenState extends State<MapScreen> {
               ),
             );
           },
+          draggable: true, // Bắt buộc phải có thuộc tính này để cho phép kéo thả
+        onDragEnd: (LatLng newPosition) {
+          // 1. Cập nhật state để xóa marker ở vị trí cũ
+          setState(() {
+            _markers.removeWhere((marker) => marker.markerId == MarkerId(markerId));
+          });
+          
+          // 2. Gọi lại hàm để vẽ lại marker với tọa độ mới (newPosition)
+          _addMarker(newPosition, markerId);
+
+        },
         ),
       );
     });
@@ -66,6 +79,7 @@ class _MapScreenState extends State<MapScreen> {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(
+        // ignore: use_build_context_synchronously
         context,
       ).showSnackBar(SnackBar(content: Text('Vui lòng bật dịch vụ vị trí!')));
       return;
@@ -114,6 +128,7 @@ class _MapScreenState extends State<MapScreen> {
         );
 
         if (points.isEmpty) {
+          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Không đọc được dữ liệu tuyến đường từ OSRM.'),
@@ -138,10 +153,12 @@ class _MapScreenState extends State<MapScreen> {
         final message =
             data['message']?.toString() ?? 'Không tìm thấy tuyến đường.';
         ScaffoldMessenger.of(
+          // ignore: use_build_context_synchronously
           context,
         ).showSnackBar(SnackBar(content: Text(message)));
       }
     } else {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi gọi API: ${response.statusCode}')),
       );
